@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SVG to React Component Converter</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      #svgInput,
+      #reactComponent {
+        background-color: #272822;
+        color: #f8f8f2;
+        font-family: "Fira Code", monospace;
+        border: 1px solid #49483e;
+        padding: 10px;
+      }
+      .button {
+        background-color: #66d9ef;
+        color: #272822;
+        padding: 10px 20px;
+        margin: 5px;
+        border: none;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-gray-200">
+    <div class="container mx-auto p-5">
+      <h1 class="text-2xl mb-5">SVG to React Component Converter</h1>
+      <textarea
+        id="svgInput"
+        rows="10"
+        class="w-full mb-5"
+        placeholder="Cole o código SVG aqui"
+      ></textarea>
+      <div class="flex">
+        <button class="button" onclick="pasteCode()">Colar Código</button>
+        <button class="button" onclick="convertToReactComponent()">
+          Converter para Componente React
+        </button>
+        <button class="button" onclick="copyToClipboard()">
+          Copiar Código
+        </button>
+        <input
+          type="file"
+          id="fileInput"
+          class="button"
+          accept=".svg"
+          onchange="handleFileUpload(event)"
+        />
+      </div>
+      <pre id="reactComponent" class="mt-5"></pre>
+    </div>
+    <script>
+      const extractColor = (svg) => {
+        const match = svg.match(/stroke="([^"]+)"/);
+        return match ? match[1] : "#000";
+      };
+
+      const pasteCode = () => {
+        navigator.clipboard
+          .readText()
+          .then((text) => {
+            document.getElementById("svgInput").value = text;
+          })
+          .catch((err) => {
+            console.error("Failed to read clipboard contents: ", err);
+          });
+      };
+
+      const convertToReactComponent = () => {
+        let svgInput = document.getElementById("svgInput").value;
+
+        // Remove duplicação de xmlns e fill
+        svgInput = svgInput.replace(/<svg[^>]*>/, "");
+        svgInput = svgInput.replace(/<\/svg>/, "");
+
+        const defaultColor = extractColor(svgInput);
+        const reactComponentCode = `
+import * as React from 'react';
+import { SVGProps } from 'react';
+
+const IconSVG = (props: SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    width={props.width ? props.width : "100%"}
+    viewBox="0 0 24 24"
+  >
+    ${svgInput
+      .replace(
+        /stroke="([^"]*)"/g,
+        'stroke={props.fill ? props.fill : "' + defaultColor + '"}'
+      )
+      .replace(/stroke-width/g, "strokeWidth")}
+  </svg>
+);
+
+export default IconSVG;
+      `.trim();
+        document.getElementById("reactComponent").innerText =
+          reactComponentCode;
+      };
+
+      const copyToClipboard = () => {
+        const reactComponentCode =
+          document.getElementById("reactComponent").innerText;
+        navigator.clipboard
+          .writeText(reactComponentCode)
+          .then(() => {
+            alert("Código copiado para a área de transferência!");
+          })
+          .catch((err) => {
+            console.error("Erro ao copiar para a área de transferência: ", err);
+          });
+      };
+
+      const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (file && file.type === "image/svg+xml") {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const svgContent = e.target.result;
+            document.getElementById("svgInput").value = svgContent;
+          };
+          reader.readAsText(file);
+        } else {
+          alert("Por favor, envie um arquivo SVG válido.");
+        }
+      };
+    </script>
+  </body>
+</html>
